@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 
 class PageContentService
 {
+    public const ENABLED_KEY_PREFIX = '__section_enabled:';
+
     /**
      * @return array<string, array{label: string, groups: list<array{key: string, title: string, description?: string, fields: list<array{key: string, label: string, type: string, default?: string}>}>}>
      */
@@ -55,8 +57,72 @@ class PageContentService
         return $def['groups'][0]['key'] ?? null;
     }
 
+    public function enabledKey(string $sectionKey): string
+    {
+        return self::ENABLED_KEY_PREFIX.$sectionKey;
+    }
+
+    public function isSectionEnabled(string $page, string $sectionKey): bool
+    {
+        $row = PageContent::query()
+            ->where('page', $page)
+            ->where('key', $this->enabledKey($sectionKey))
+            ->first(['value']);
+
+        if ($row === null || $row->value === null || $row->value === '') {
+            return true;
+        }
+
+        return $row->value === '1' || $row->value === 'true';
+    }
+
     /**
-     * @return list<array{key: string, label: string, description: string, href: string}>
+     * @return array<string, bool>
+     */
+    public function sectionEnabledMap(string $page): array
+    {
+        $def = $this->definition($page);
+
+        if ($def === null) {
+            return [];
+        }
+
+        $keys = collect($def['groups'])->pluck('key')->all();
+        $stored = PageContent::query()
+            ->where('page', $page)
+            ->whereIn('key', array_map(fn (string $k) => $this->enabledKey($k), $keys))
+            ->get(['key', 'value'])
+            ->keyBy('key');
+
+        $map = [];
+        foreach ($keys as $sectionKey) {
+            $row = $stored->get($this->enabledKey($sectionKey));
+            if ($row === null || $row->value === null || $row->value === '') {
+                $map[$sectionKey] = true;
+            } else {
+                $map[$sectionKey] = $row->value === '1' || $row->value === 'true';
+            }
+        }
+
+        return $map;
+    }
+
+    public function setSectionEnabled(string $page, string $sectionKey, bool $enabled): void
+    {
+        abort_unless($this->section($page, $sectionKey) !== null, 404);
+
+        PageContent::query()->updateOrCreate(
+            ['page' => $page, 'key' => $this->enabledKey($sectionKey)],
+            [
+                'value' => $enabled ? '1' : '0',
+                'image_url' => null,
+                'label' => 'Section enabled',
+            ],
+        );
+    }
+
+    /**
+     * @return list<array{key: string, label: string, description: string, href: string, enabled: bool}>
      */
     public function sectionNav(string $page): array
     {
@@ -66,6 +132,7 @@ class PageContentService
             return [];
         }
 
+        $enabledMap = $this->sectionEnabledMap($page);
         $routeName = $page === 'layout' ? 'dashboard.layout.edit' : 'dashboard.pages.edit';
 
         return collect($def['groups'])
@@ -76,6 +143,7 @@ class PageContentService
                 'href' => route($routeName, $page === 'layout'
                     ? ['section' => $group['key']]
                     : ['page' => $page, 'section' => $group['key']], false),
+                'enabled' => $enabledMap[$group['key']] ?? true,
             ])
             ->values()
             ->all();
@@ -105,17 +173,37 @@ class PageContentService
     }
 
     /**
-     * @return array{text: array<string, string>, images: array<string, string>}
+     * Field keys that belong to a given section.
+     *
+     * @return list<string>
+     */
+    public function sectionFieldKeys(string $page, string $sectionKey): array
+    {
+        $section = $this->section($page, $sectionKey);
+
+        if ($section === null) {
+            return [];
+        }
+
+        return collect($section['fields'])->pluck('key')->all();
+    }
+
+    /**
+     * @return array{text: array<string, string>, images: array<string, string>, sections: array<string, bool>}
      */
     public function forPublic(string $slug): array
     {
         $text = $this->defaults($slug);
         $images = [];
+        $sections = $this->sectionEnabledMap($slug);
 
         PageContent::query()
             ->where('page', $slug)
             ->get(['key', 'value', 'image_url'])
             ->each(function (PageContent $row) use (&$text, &$images) {
+                if (str_starts_with($row->key, self::ENABLED_KEY_PREFIX)) {
+                    return;
+                }
                 if ($row->value !== null && $row->value !== '') {
                     $text[$row->key] = $row->value;
                 }
@@ -138,13 +226,23 @@ class PageContentService
             }
         }
 
-        return compact('text', 'images');
+        // Strip content belonging to disabled sections from the public payload.
+        foreach ($sections as $sectionKey => $enabled) {
+            if ($enabled) {
+                continue;
+            }
+            foreach ($this->sectionFieldKeys($slug, $sectionKey) as $fieldKey) {
+                unset($text[$fieldKey], $images[$fieldKey]);
+            }
+        }
+
+        return compact('text', 'images', 'sections');
     }
 
     /**
      * Shared header/footer for all public pages.
      *
-     * @return array{brand_text: string, footer_copy: string}
+     * @return array{brand_text: string, footer_copy: string, header_enabled: bool, footer_enabled: bool}
      */
     public function layoutForPublic(): array
     {
@@ -153,6 +251,8 @@ class PageContentService
         return [
             'brand_text' => $layout['text']['brand_text'] ?? 'SOUL SANCTUARY',
             'footer_copy' => $layout['text']['footer_copy'] ?? ('© '.date('Y').' Sanctuary of the Veil Keepers. All rights reserved.'),
+            'header_enabled' => $layout['sections']['header'] ?? true,
+            'footer_enabled' => $layout['sections']['footer'] ?? true,
         ];
     }
 
@@ -228,6 +328,16 @@ class PageContentService
         foreach ($this->pages() as $slug => $def) {
             $sort = 0;
             foreach ($def['groups'] as $group) {
+                PageContent::query()->firstOrCreate(
+                    ['page' => $slug, 'key' => $this->enabledKey($group['key'])],
+                    [
+                        'value' => '1',
+                        'image_url' => null,
+                        'label' => 'Section enabled',
+                        'sort_order' => $sort++,
+                    ],
+                );
+
                 foreach ($group['fields'] as $field) {
                     PageContent::query()->firstOrCreate(
                         ['page' => $slug, 'key' => $field['key']],

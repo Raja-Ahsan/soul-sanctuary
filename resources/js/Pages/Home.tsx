@@ -25,15 +25,46 @@ function applyCms(root: HTMLElement, text: Record<string, string>, images: Recor
   });
 }
 
+function applySectionVisibility(
+  root: HTMLElement,
+  sections: Record<string, boolean>,
+  site?: { header_enabled?: boolean; footer_enabled?: boolean },
+) {
+  root.querySelectorAll<HTMLElement>("[data-cms-section]").forEach((el) => {
+    const key = el.dataset.cmsSection!;
+    const enabled = sections[key] !== false;
+    el.style.display = enabled ? "" : "none";
+  });
+
+  if (site?.header_enabled === false) {
+    root.querySelectorAll<HTMLElement>(".navbar, #navOverlay").forEach((el) => {
+      el.style.display = "none";
+    });
+  }
+
+  if (site?.footer_enabled === false) {
+    root.querySelectorAll<HTMLElement>("footer.footer").forEach((el) => {
+      el.style.display = "none";
+    });
+  }
+}
+
 export default function Home({
   content,
   images,
+  sections = {},
 }: {
   content: Record<string, string>;
   images: Record<string, string>;
+  sections?: Record<string, boolean>;
 }) {
   const { site } = usePage().props as {
-    site?: { brand_text?: string; footer_copy?: string };
+    site?: {
+      brand_text?: string;
+      footer_copy?: string;
+      header_enabled?: boolean;
+      footer_enabled?: boolean;
+    };
   };
   const ref = useRef<HTMLDivElement>(null);
 
@@ -66,11 +97,12 @@ export default function Home({
     };
 
     applyCms(root, merged, images);
+    applySectionVisibility(root, sections, site);
 
     return () => {
       if (root) root.innerHTML = "";
     };
-  }, [content, images, site]);
+  }, [content, images, sections, site]);
 
   return <div ref={ref} className="sanctuary-home-root" />;
 }

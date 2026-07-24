@@ -4,9 +4,11 @@ import { SanctuaryLayout } from "@/components/SanctuaryLayout";
 
 export default function Contact({
   content,
+  sections = {},
 }: {
   content: Record<string, string>;
   images: Record<string, string>;
+  sections?: Record<string, boolean>;
 }) {
   const t = (key: string) => content[key] ?? "";
   const { flash } = usePage().props as { flash?: { success?: string } };
@@ -15,6 +17,8 @@ export default function Contact({
     email: "",
     message: "",
   });
+  const showHeader = sections.header !== false;
+  const showInfo = sections.info !== false;
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -28,16 +32,23 @@ export default function Contact({
   const sent = Boolean(flash?.success);
 
   return (
-    <SanctuaryLayout eyebrow={t("eyebrow")} title={<>{t("title")}</>} intro={t("intro")}>
+    <SanctuaryLayout
+      eyebrow={t("eyebrow")}
+      title={<>{t("title")}</>}
+      intro={t("intro")}
+      showHero={showHeader}
+    >
       <div className="sk-grid" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))" }}>
-        <div>
-          <h3>{t("visit_title")}</h3>
-          <p>{t("visit_body")}</p>
-          <h3 style={{ marginTop: 30 }}>{t("write_title")}</h3>
-          <p>Email: <a href={`mailto:${email}`} style={{ color: "#7c2d1f" }}>{email}</a></p>
-          <h3 style={{ marginTop: 30 }}>{t("support_title")}</h3>
-          <p>{t("support_body")}</p>
-        </div>
+        {showInfo && (
+          <div>
+            <h3>{t("visit_title")}</h3>
+            <p>{t("visit_body")}</p>
+            <h3 style={{ marginTop: 30 }}>{t("write_title")}</h3>
+            <p>Email: <a href={`mailto:${email}`} style={{ color: "#7c2d1f" }}>{email}</a></p>
+            <h3 style={{ marginTop: 30 }}>{t("support_title")}</h3>
+            <p>{t("support_body")}</p>
+          </div>
+        )}
 
         {sent ? (
           <div style={{ textAlign: "center", padding: 40 }}>

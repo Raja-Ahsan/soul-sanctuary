@@ -15,33 +15,44 @@ const FALLBACK_IMAGES: Record<string, string> = {
 export default function Offerings({
   content,
   images,
+  sections = {},
   items,
 }: {
   content: Record<string, string>;
   images: Record<string, string>;
+  sections?: Record<string, boolean>;
   items: Offering[];
 }) {
   const t = (key: string) => content[key] ?? "";
   const img = (key: string, fallback = "") => images[key] ?? fallback;
+  const showHeader = sections.header !== false;
 
   return (
-    <SanctuaryLayout eyebrow={t("eyebrow")} title={<>{t("title")}</>} intro={t("intro")}>
+    <SanctuaryLayout
+      eyebrow={t("eyebrow")}
+      title={<>{t("title")}</>}
+      intro={t("intro")}
+      showHero={showHeader}
+    >
       <div className="sk-grid">
-        {["1", "2", "3", "4", "5", "6"].map((n) => (
-          <article key={n} className="sk-card">
-            <img
-              src={img(`off${n}_image`, FALLBACK_IMAGES[n])}
-              alt={t(`off${n}_title`)}
-              loading="lazy"
-              style={{ width: "100%", height: 220, objectFit: "cover", borderRadius: 4, marginBottom: 16 }}
-            />
-            <span className="sk-tag">{t(`off${n}_tag`)}</span>
-            <h3>{t(`off${n}_title`)}</h3>
-            <p style={{ color: "#7c2d1f", fontStyle: "italic", marginTop: 4 }}>{t(`off${n}_subtitle`)}</p>
-            <p style={{ marginTop: 12 }}>{t(`off${n}_body`)}</p>
-            <Link href="/consultation" className="sk-btn ghost" style={{ marginTop: 18 }}>Inquire</Link>
-          </article>
-        ))}
+        {["1", "2", "3", "4", "5", "6"].map((n) => {
+          if (sections[`offering-${n}`] === false) return null;
+          return (
+            <article key={n} className="sk-card">
+              <img
+                src={img(`off${n}_image`, FALLBACK_IMAGES[n])}
+                alt={t(`off${n}_title`)}
+                loading="lazy"
+                style={{ width: "100%", height: 220, objectFit: "cover", borderRadius: 4, marginBottom: 16 }}
+              />
+              <span className="sk-tag">{t(`off${n}_tag`)}</span>
+              <h3>{t(`off${n}_title`)}</h3>
+              <p style={{ color: "#7c2d1f", fontStyle: "italic", marginTop: 4 }}>{t(`off${n}_subtitle`)}</p>
+              <p style={{ marginTop: 12 }}>{t(`off${n}_body`)}</p>
+              <Link href="/consultation" className="sk-btn ghost" style={{ marginTop: 18 }}>Inquire</Link>
+            </article>
+          );
+        })}
       </div>
 
       {items.length > 0 && (

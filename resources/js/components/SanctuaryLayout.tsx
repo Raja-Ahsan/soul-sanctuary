@@ -4,6 +4,8 @@ import { Link, usePage } from "@inertiajs/react";
 type SiteLayoutProps = {
   brand_text?: string;
   footer_copy?: string;
+  header_enabled?: boolean;
+  footer_enabled?: boolean;
 };
 
 export function SanctuaryLayout({
@@ -11,17 +13,21 @@ export function SanctuaryLayout({
   title,
   intro,
   children,
+  showHero = true,
 }: {
   eyebrow: string;
   title: ReactNode;
   intro?: string;
   children: ReactNode;
+  showHero?: boolean;
 }) {
   const { site } = usePage().props as { site?: SiteLayoutProps };
   const brand = site?.brand_text || "SOUL SANCTUARY";
   const footerCopy =
     site?.footer_copy ||
     `© ${new Date().getFullYear()} Sanctuary of the Veil Keepers · All rights reserved`;
+  const showHeader = site?.header_enabled !== false;
+  const showFooter = site?.footer_enabled !== false;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const links = [
@@ -35,33 +41,35 @@ export function SanctuaryLayout({
   return (
     <div className="sanctuary-page">
       <style>{sanctuaryCss}</style>
-      <header className="sk-nav">
-        <Link href="/" className="sk-brand">
-          <svg width="28" height="28" viewBox="0 0 60 60" fill="none" aria-hidden="true">
-            <circle cx="30" cy="30" r="26" stroke="#e2542f" strokeWidth="1" strokeDasharray="4 6" />
-            <circle cx="30" cy="30" r="14" stroke="#d4af6a" strokeWidth="1" />
-            <line x1="30" y1="4" x2="30" y2="56" stroke="#e2542f" strokeWidth="0.5" opacity="0.5" />
-            <line x1="4" y1="30" x2="56" y2="30" stroke="#e2542f" strokeWidth="0.5" opacity="0.5" />
-          </svg>
-          <span>{brand}</span>
-        </Link>
+      {showHeader && (
+        <header className="sk-nav">
+          <Link href="/" className="sk-brand">
+            <svg width="28" height="28" viewBox="0 0 60 60" fill="none" aria-hidden="true">
+              <circle cx="30" cy="30" r="26" stroke="#e2542f" strokeWidth="1" strokeDasharray="4 6" />
+              <circle cx="30" cy="30" r="14" stroke="#d4af6a" strokeWidth="1" />
+              <line x1="30" y1="4" x2="30" y2="56" stroke="#e2542f" strokeWidth="0.5" opacity="0.5" />
+              <line x1="4" y1="30" x2="56" y2="30" stroke="#e2542f" strokeWidth="0.5" opacity="0.5" />
+            </svg>
+            <span>{brand}</span>
+          </Link>
 
-        <nav className="sk-nav-links">
-          {links.map((l) => (
-            <Link key={l.href} href={l.href}>{l.label}</Link>
-          ))}
-        </nav>
+          <nav className="sk-nav-links">
+            {links.map((l) => (
+              <Link key={l.href} href={l.href}>{l.label}</Link>
+            ))}
+          </nav>
 
-        <button
-          className="sk-hamburger"
-          aria-label="Menu"
-          onClick={() => setMenuOpen((o) => !o)}
-        >
-          <span /><span /><span />
-        </button>
-      </header>
+          <button
+            className="sk-hamburger"
+            aria-label="Menu"
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <span /><span /><span />
+          </button>
+        </header>
+      )}
 
-      {menuOpen && (
+      {showHeader && menuOpen && (
         <div className="sk-mobile-menu">
           {links.map((l) => (
             <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)}>{l.label}</Link>
@@ -70,31 +78,35 @@ export function SanctuaryLayout({
       )}
 
       <main className="sk-main">
-        <div className="sk-hero-text">
-          {eyebrow && <p className="sk-eyebrow">{eyebrow}</p>}
-          <h1 className="sk-title">{title}</h1>
-          {intro && <p className="sk-intro">{intro}</p>}
-        </div>
+        {showHero && (
+          <div className="sk-hero-text">
+            {eyebrow && <p className="sk-eyebrow">{eyebrow}</p>}
+            <h1 className="sk-title">{title}</h1>
+            {intro && <p className="sk-intro">{intro}</p>}
+          </div>
+        )}
         <div className="sk-content">{children}</div>
       </main>
 
-      <footer className="sk-footer">
-        <Link href="/" className="sk-brand" style={{ justifyContent: "center" }}>
-          <svg width="22" height="22" viewBox="0 0 60 60" fill="none" aria-hidden="true">
-            <circle cx="30" cy="30" r="26" stroke="#e2542f" strokeWidth="1" strokeDasharray="4 6" />
-            <circle cx="30" cy="30" r="14" stroke="#d4af6a" strokeWidth="1" />
-          </svg>
-          <span style={{ fontSize: 11 }}>{brand}</span>
-        </Link>
-        <nav style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", justifyContent: "center", marginTop: "1rem" }}>
-          {links.map((l) => (
-            <Link key={l.href} href={l.href} style={{ fontSize: 12, color: "#9b8878", textDecoration: "none" }}>{l.label}</Link>
-          ))}
-        </nav>
-        <p style={{ marginTop: "1.5rem", fontSize: 11, color: "#9b8878" }}>
-          {footerCopy}
-        </p>
-      </footer>
+      {showFooter && (
+        <footer className="sk-footer">
+          <Link href="/" className="sk-brand" style={{ justifyContent: "center" }}>
+            <svg width="22" height="22" viewBox="0 0 60 60" fill="none" aria-hidden="true">
+              <circle cx="30" cy="30" r="26" stroke="#e2542f" strokeWidth="1" strokeDasharray="4 6" />
+              <circle cx="30" cy="30" r="14" stroke="#d4af6a" strokeWidth="1" />
+            </svg>
+            <span style={{ fontSize: 11 }}>{brand}</span>
+          </Link>
+          <nav style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", justifyContent: "center", marginTop: "1rem" }}>
+            {links.map((l) => (
+              <Link key={l.href} href={l.href} style={{ fontSize: 12, color: "#9b8878", textDecoration: "none" }}>{l.label}</Link>
+            ))}
+          </nav>
+          <p style={{ marginTop: "1.5rem", fontSize: 11, color: "#9b8878" }}>
+            {footerCopy}
+          </p>
+        </footer>
+      )}
     </div>
   );
 }

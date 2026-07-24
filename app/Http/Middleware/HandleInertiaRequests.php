@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Services\PageContentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -39,6 +40,20 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
             ],
             'site' => fn () => app(PageContentService::class)->layoutForPublic(),
+            'cmsSections' => function () use ($request) {
+                if (! $request->user() || ! Schema::hasTable('page_contents')) {
+                    return null;
+                }
+
+                $service = app(PageContentService::class);
+                $maps = [];
+
+                foreach (array_keys($service->pages()) as $slug) {
+                    $maps[$slug] = $service->sectionEnabledMap($slug);
+                }
+
+                return $maps;
+            },
         ];
     }
 }

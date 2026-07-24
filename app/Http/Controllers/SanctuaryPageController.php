@@ -23,6 +23,7 @@ class SanctuaryPageController extends Controller
         return Inertia::render('Home', [
             'content' => $content['text'],
             'images' => $content['images'],
+            'sections' => $content['sections'],
         ]);
     }
 
@@ -33,6 +34,7 @@ class SanctuaryPageController extends Controller
         return Inertia::render('Offerings', [
             'content' => $content['text'],
             'images' => $content['images'],
+            'sections' => $content['sections'],
             'items' => Offering::query()
                 ->where('visible', true)
                 ->orderBy('sort_order')
@@ -48,6 +50,7 @@ class SanctuaryPageController extends Controller
         return Inertia::render('Animals', [
             'content' => $content['text'],
             'images' => $content['images'],
+            'sections' => $content['sections'],
             'items' => Animal::query()
                 ->where('visible', true)
                 ->orderBy('sort_order')
@@ -63,6 +66,7 @@ class SanctuaryPageController extends Controller
         return Inertia::render('Reflections', [
             'content' => $content['text'],
             'images' => $content['images'],
+            'sections' => $content['sections'],
             'items' => Reflection::query()
                 ->where('published', true)
                 ->orderByDesc('published_at')
@@ -77,6 +81,7 @@ class SanctuaryPageController extends Controller
         return Inertia::render('SophiaScrolls', [
             'content' => $content['text'],
             'images' => $content['images'],
+            'sections' => $content['sections'],
         ]);
     }
 
@@ -92,6 +97,7 @@ class SanctuaryPageController extends Controller
         return Inertia::render('Contact', [
             'content' => $content['text'],
             'images' => $content['images'],
+            'sections' => $content['sections'],
         ]);
     }
 }

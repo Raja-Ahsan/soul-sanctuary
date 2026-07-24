@@ -68,6 +68,18 @@ function isSectionActive(url: string, href: string) {
   return url === href || url.startsWith(`${href}?`);
 }
 
+type CmsSectionsMap = Record<string, Record<string, boolean>> | null;
+
+function withEnabledFlags<T extends { key: string }>(
+  items: ReadonlyArray<T>,
+  enabledMap?: Record<string, boolean>,
+): Array<T & { enabled: boolean }> {
+  return items.map((item) => ({
+    ...item,
+    enabled: enabledMap?.[item.key] !== false,
+  }));
+}
+
 export function DashboardSidebar({
   onNavigate,
   className,
@@ -75,57 +87,60 @@ export function DashboardSidebar({
   onNavigate?: () => void;
   className?: string;
 }) {
-  const { url } = usePage();
+  const page = usePage();
+  const pageUrl = page.url;
+  const cmsSections = (page.props as { cmsSections?: CmsSectionsMap }).cmsSections ?? null;
+  const maps = cmsSections;
 
   const groups = [
     {
       key: "layout",
       label: "Layout",
       icon: PanelsTopLeft,
-      active: url.startsWith("/dashboard/layout"),
-      items: layoutSectionNav,
+      active: pageUrl.startsWith("/dashboard/layout"),
+      items: withEnabledFlags(layoutSectionNav, maps?.layout),
     },
     {
       key: "home",
       label: "Home",
       icon: Home,
-      active: url.startsWith("/dashboard/pages/home"),
-      items: homeSectionNav,
+      active: pageUrl.startsWith("/dashboard/pages/home"),
+      items: withEnabledFlags(homeSectionNav, maps?.home),
     },
     {
       key: "offerings",
       label: "Offerings",
       icon: Sparkles,
-      active: url.startsWith("/dashboard/pages/offerings"),
-      items: offeringsSectionNav,
+      active: pageUrl.startsWith("/dashboard/pages/offerings"),
+      items: withEnabledFlags(offeringsSectionNav, maps?.offerings),
     },
     {
       key: "animals",
       label: "The Animals",
       icon: PawPrint,
-      active: url.startsWith("/dashboard/pages/the-animals"),
-      items: animalsSectionNav,
+      active: pageUrl.startsWith("/dashboard/pages/the-animals"),
+      items: withEnabledFlags(animalsSectionNav, maps?.["the-animals"]),
     },
     {
       key: "reflections",
       label: "Reflections",
       icon: Feather,
-      active: url.startsWith("/dashboard/pages/reflections"),
-      items: reflectionsSectionNav,
+      active: pageUrl.startsWith("/dashboard/pages/reflections"),
+      items: withEnabledFlags(reflectionsSectionNav, maps?.reflections),
     },
     {
       key: "sophia",
       label: "Sophia Scrolls",
       icon: ScrollText,
-      active: url.startsWith("/dashboard/pages/sophia-scrolls"),
-      items: sophiaSectionNav,
+      active: pageUrl.startsWith("/dashboard/pages/sophia-scrolls"),
+      items: withEnabledFlags(sophiaSectionNav, maps?.["sophia-scrolls"]),
     },
     {
       key: "contact",
       label: "Contact",
       icon: Mail,
-      active: url.startsWith("/dashboard/pages/contact"),
-      items: contactSectionNav,
+      active: pageUrl.startsWith("/dashboard/pages/contact"),
+      items: withEnabledFlags(contactSectionNav, maps?.contact),
     },
   ] as const;
 
@@ -141,7 +156,7 @@ export function DashboardSidebar({
       }
       return next;
     });
-  }, [url]);
+  }, [pageUrl]);
 
   return (
     <aside
@@ -181,7 +196,7 @@ export function DashboardSidebar({
               }))
             }
             items={group.items}
-            url={url}
+            url={pageUrl}
             onNavigate={onNavigate}
             className={index === 0 ? undefined : "mt-1"}
           />
@@ -192,7 +207,7 @@ export function DashboardSidebar({
         </p>
         {entityNav.map((item) => {
           const Icon = item.icon;
-          const active = url === item.href || url.startsWith(`${item.href}/`) || url.startsWith(`${item.href}?`);
+          const active = pageUrl === item.href || pageUrl.startsWith(`${item.href}/`) || pageUrl.startsWith(`${item.href}?`);
           return (
             <Link
               key={item.key}
@@ -251,7 +266,7 @@ function NavDropdown({
   active: boolean;
   open: boolean;
   onToggle: () => void;
-  items: ReadonlyArray<{ key: string; label: string; href: string }>;
+  items: ReadonlyArray<{ key: string; label: string; href: string; enabled?: boolean }>;
   url: string;
   onNavigate?: () => void;
   className?: string;
@@ -283,6 +298,7 @@ function NavDropdown({
         <div className="ml-3 space-y-1 border-l border-white/10 pl-3">
           {items.map((item) => {
             const sectionActive = isSectionActive(url, item.href);
+            const off = item.enabled === false;
 
             return (
               <Link
@@ -290,13 +306,25 @@ function NavDropdown({
                 href={item.href}
                 onClick={onNavigate}
                 className={cn(
-                  "block rounded-lg px-3 py-2 text-sm transition-colors",
+                  "flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                   sectionActive
                     ? "bg-[#d4af6a] font-semibold text-[#1a0f06] shadow-sm"
                     : "text-white/70 hover:bg-white/8 hover:text-white",
                 )}
               >
-                {item.label}
+                <span>{item.label}</span>
+                {off ? (
+                  <span
+                    className={cn(
+                      "rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                      sectionActive
+                        ? "bg-[#1a0f06]/15 text-[#1a0f06]"
+                        : "bg-amber-500/20 text-amber-200",
+                    )}
+                  >
+                    Off
+                  </span>
+                ) : null}
               </Link>
             );
           })}

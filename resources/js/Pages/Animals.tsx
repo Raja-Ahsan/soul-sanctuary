@@ -3,20 +3,32 @@ import type { Animal } from "@/lib/cms";
 
 export default function Animals({
   content,
+  sections = {},
   items,
 }: {
   content: Record<string, string>;
   images: Record<string, string>;
+  sections?: Record<string, boolean>;
   items: Animal[];
 }) {
   const t = (key: string) => content[key] ?? "";
+  const showContent = sections.content !== false;
 
   return (
-    <SanctuaryLayout eyebrow={t("eyebrow")} title={<>{t("title")}</>} intro={t("intro")}>
-      <p>{t("body_p1")}</p>
-      <p>{t("body_p2")}</p>
+    <SanctuaryLayout
+      eyebrow={t("eyebrow")}
+      title={<>{t("title")}</>}
+      intro={t("intro")}
+      showHero={showContent}
+    >
+      {showContent && (
+        <>
+          <p>{t("body_p1")}</p>
+          <p>{t("body_p2")}</p>
+          <h2 style={{ marginTop: 60 }}>{t("council_heading")}</h2>
+        </>
+      )}
 
-      <h2 style={{ marginTop: 60 }}>{t("council_heading")}</h2>
       {items.length === 0 ? (
         <p className="sk-note">The animals are resting. Come back soon.</p>
       ) : (
