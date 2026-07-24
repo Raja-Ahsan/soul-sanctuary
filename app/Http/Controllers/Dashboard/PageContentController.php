@@ -40,6 +40,7 @@ class PageContentController extends Controller
             'fields' => $group['fields'],
             'rows' => $this->pages->forAdminSection($page, $section),
             'sections' => $this->pages->sectionNav($page),
+            'enabled' => $this->pages->isSectionEnabled($page, $section),
             'updateUrl' => $updateRoute,
             'groupLabel' => $isLayout ? 'Site layout' : ($this->pages->definition($page)['label'].' page'),
         ]);
@@ -51,6 +52,7 @@ class PageContentController extends Controller
         abort_unless($this->pages->section($page, $section) !== null, 404);
 
         $validated = $request->validate([
+            'enabled' => ['required', 'boolean'],
             'items' => ['required', 'array'],
             'items.*.key' => ['required', 'string'],
             'items.*.value' => ['nullable', 'string'],
@@ -67,6 +69,7 @@ class PageContentController extends Controller
             ->all();
 
         $this->pages->save($page, $items);
+        $this->pages->setSectionEnabled($page, $section, (bool) $validated['enabled']);
 
         $route = $page === 'layout' ? 'dashboard.layout.edit' : 'dashboard.pages.edit';
         $params = $page === 'layout'

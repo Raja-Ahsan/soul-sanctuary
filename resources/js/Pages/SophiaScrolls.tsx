@@ -24,11 +24,14 @@ const scrolls = [
 
 export default function SophiaScrolls({
   content,
+  sections = {},
 }: {
   content: Record<string, string>;
   images: Record<string, string>;
+  sections?: Record<string, boolean>;
 }) {
   const t = (key: string) => content[key] ?? "";
+  const showHeader = sections.header !== false;
   const [index, setIndex] = useState(0);
   const total = scrolls.length;
 
@@ -41,7 +44,12 @@ export default function SophiaScrolls({
   const current = scrolls[index];
 
   return (
-    <SanctuaryLayout eyebrow={t("eyebrow")} title={<>{t("title")}</>} intro={t("intro")}>
+    <SanctuaryLayout
+      eyebrow={showHeader ? t("eyebrow") : ""}
+      title={<>{showHeader ? t("title") : ""}</>}
+      intro={showHeader ? t("intro") : undefined}
+      showHero={showHeader}
+    >
       <p style={{ textAlign: "center", maxWidth: 680, margin: "0 auto 40px", fontStyle: "italic" }}>
         They arrive not to teach, but to awaken. Not to convince, but to call.<br />
         Each scroll is a veil lifted. Each word, a code remembered.<br />

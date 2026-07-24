@@ -75,59 +75,71 @@ export function DashboardSidebar({
   onNavigate?: () => void;
   className?: string;
 }) {
-  const { url } = usePage();
+  const page = usePage();
+  const currentUrl = page.url;
+  const status = (page.props as { cmsSections?: Record<string, Record<string, boolean>> | null }).cmsSections;
+
+  function withStatus<T extends { key: string }>(
+    pageSlug: string,
+    items: ReadonlyArray<T>,
+  ): Array<T & { enabled: boolean }> {
+    return items.map((item) => ({
+      ...item,
+      enabled: status?.[pageSlug]?.[item.key] !== false,
+    }));
+  }
 
   const groups = [
     {
       key: "layout",
       label: "Layout",
       icon: PanelsTopLeft,
-      active: url.startsWith("/dashboard/layout"),
-      items: layoutSectionNav,
+      active: currentUrl.startsWith("/dashboard/layout"),
+      items: withStatus("layout", layoutSectionNav),
     },
     {
       key: "home",
       label: "Home",
       icon: Home,
-      active: url.startsWith("/dashboard/pages/home"),
-      items: homeSectionNav,
+      active: currentUrl.startsWith("/dashboard/pages/home"),
+      items: withStatus("home", homeSectionNav),
     },
     {
       key: "offerings",
       label: "Offerings",
       icon: Sparkles,
-      active: url.startsWith("/dashboard/pages/offerings"),
-      items: offeringsSectionNav,
+      active: currentUrl.startsWith("/dashboard/pages/offerings"),
+      items: withStatus("offerings", offeringsSectionNav),
     },
     {
       key: "animals",
       label: "The Animals",
       icon: PawPrint,
-      active: url.startsWith("/dashboard/pages/the-animals"),
-      items: animalsSectionNav,
+      active: currentUrl.startsWith("/dashboard/pages/the-animals"),
+      items: withStatus("the-animals", animalsSectionNav),
     },
     {
       key: "reflections",
       label: "Reflections",
       icon: Feather,
-      active: url.startsWith("/dashboard/pages/reflections"),
-      items: reflectionsSectionNav,
+      active: currentUrl.startsWith("/dashboard/pages/reflections"),
+      items: withStatus("reflections", reflectionsSectionNav),
     },
     {
       key: "sophia",
       label: "Sophia Scrolls",
       icon: ScrollText,
-      active: url.startsWith("/dashboard/pages/sophia-scrolls"),
-      items: sophiaSectionNav,
+      active: currentUrl.startsWith("/dashboard/pages/sophia-scrolls"),
+      items: withStatus("sophia-scrolls", sophiaSectionNav),
     },
     {
       key: "contact",
       label: "Contact",
       icon: Mail,
-      active: url.startsWith("/dashboard/pages/contact"),
-      items: contactSectionNav,
+      active: currentUrl.startsWith("/dashboard/pages/contact"),
+      items: withStatus("contact", contactSectionNav),
     },
-  ] as const;
+  ];
 
   const [openMap, setOpenMap] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(groups.map((group) => [group.key, group.active])),
@@ -141,7 +153,7 @@ export function DashboardSidebar({
       }
       return next;
     });
-  }, [url]);
+  }, [currentUrl]);
 
   return (
     <aside
@@ -181,7 +193,7 @@ export function DashboardSidebar({
               }))
             }
             items={group.items}
-            url={url}
+            url={currentUrl}
             onNavigate={onNavigate}
             className={index === 0 ? undefined : "mt-1"}
           />
@@ -192,7 +204,7 @@ export function DashboardSidebar({
         </p>
         {entityNav.map((item) => {
           const Icon = item.icon;
-          const active = url === item.href || url.startsWith(`${item.href}/`) || url.startsWith(`${item.href}?`);
+          const active = currentUrl === item.href || currentUrl.startsWith(`${item.href}/`) || currentUrl.startsWith(`${item.href}?`);
           return (
             <Link
               key={item.key}
@@ -251,7 +263,7 @@ function NavDropdown({
   active: boolean;
   open: boolean;
   onToggle: () => void;
-  items: ReadonlyArray<{ key: string; label: string; href: string }>;
+  items: ReadonlyArray<{ key: string; label: string; href: string; enabled?: boolean }>;
   url: string;
   onNavigate?: () => void;
   className?: string;
@@ -297,6 +309,11 @@ function NavDropdown({
                 )}
               >
                 {item.label}
+                {item.enabled === false ? (
+                  <span className={cn("ml-1 text-[10px] uppercase tracking-wide", sectionActive ? "opacity-80" : "text-amber-400")}>
+                    Off
+                  </span>
+                ) : null}
               </Link>
             );
           })}

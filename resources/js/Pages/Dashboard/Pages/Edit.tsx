@@ -4,7 +4,7 @@ import { ImageUploader } from "@/components/ImageUploader";
 
 type Field = { key: string; label: string; type: "text" | "textarea" | "image"; default?: string };
 type Row = { key: string; value: string; image_url: string | null; type: string; label: string };
-type SectionNav = { key: string; label: string; description: string; href: string };
+type SectionNav = { key: string; label: string; description: string; href: string; enabled: boolean };
 
 export default function EditSection({
   pageSlug,
@@ -15,6 +15,7 @@ export default function EditSection({
   fields,
   rows: initialRows,
   sections,
+  enabled: initialEnabled,
   updateUrl,
   groupLabel,
 }: {
@@ -26,16 +27,19 @@ export default function EditSection({
   fields: Field[];
   rows: Record<string, Row>;
   sections: SectionNav[];
+  enabled: boolean;
   updateUrl: string;
   groupLabel: string;
 }) {
   const { flash } = usePage().props as { flash?: { success?: string } };
   const [rows, setRows] = useState(initialRows);
+  const [enabled, setEnabled] = useState(initialEnabled);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setRows(initialRows);
-  }, [initialRows, pageSlug, sectionKey]);
+    setEnabled(initialEnabled);
+  }, [initialRows, initialEnabled, pageSlug, sectionKey]);
 
   function update(key: string, patch: Partial<Row>) {
     setRows((prev) => ({ ...prev, [key]: { ...prev[key], key, ...patch } }));
@@ -47,6 +51,7 @@ export default function EditSection({
     router.put(
       updateUrl,
       {
+        enabled,
         items: fields.map((f) => ({
           key: f.key,
           value: rows[f.key]?.value ?? "",
@@ -90,6 +95,11 @@ export default function EditSection({
                 }
               >
                 {s.label}
+                {!s.enabled ? (
+                  <span className={active ? "ml-1 opacity-80" : "ml-1 text-amber-700"}>
+                    · Off
+                  </span>
+                ) : null}
               </Link>
             );
           })}
@@ -97,10 +107,32 @@ export default function EditSection({
       )}
 
       <form onSubmit={save} className="rounded-xl border border-border bg-card">
-        <header className="border-b border-border px-5 py-3">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3">
           <h2 className="text-sm font-semibold">{pageLabel} · {sectionTitle}</h2>
+          <label className="inline-flex cursor-pointer items-center gap-3 text-sm">
+            <span className={enabled ? "text-emerald-700" : "text-amber-700"}>
+              {enabled ? "Section visible" : "Section disabled"}
+            </span>
+            <span className="relative inline-flex h-6 w-11 items-center">
+              <input
+                type="checkbox"
+                className="peer sr-only"
+                checked={enabled}
+                onChange={(e) => setEnabled(e.target.checked)}
+              />
+              <span className="absolute inset-0 rounded-full bg-muted transition peer-checked:bg-emerald-600" />
+              <span className="absolute left-0.5 h-5 w-5 rounded-full bg-white shadow transition peer-checked:translate-x-5" />
+            </span>
+          </label>
         </header>
-        <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
+
+        {!enabled && (
+          <div className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-900">
+            This section is disabled and will not appear on the public website. Content is kept and can be re-enabled anytime.
+          </div>
+        )}
+
+        <div className={`grid grid-cols-1 gap-5 p-5 md:grid-cols-2 ${enabled ? "" : "opacity-60"}`}>
           {fields.map((f) => {
             const row = rows[f.key];
             const cls = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
